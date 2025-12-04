@@ -100,8 +100,8 @@ def predict(
         
         data = Datax18(theoretical_series, observed_series, previous_values=4, horizon=horizon)
         data_objects.append(data)
-        
-        test_start_index = 722 + 1 - (horizon - 1) + 7 - 4 + 3 - depth
+        delta = len(observed_series) - 11
+        test_start_index = delta + 1 - (horizon - 1) + 7 - 4 + 3 - depth
         test_indices.append(test_start_index)
 
     horizon_predictions = []
