@@ -235,15 +235,15 @@ def main(
     device: torch.device, 
     path_to_save: str, 
     depth: int, 
-    need_plot: bool
+    need_plot: bool,
+    ssn_data: str
 ) -> None:
-    ssn_data_url = 'https://www.sidc.be/SILSO/DATA/SN_ms_tot_V2.0.csv'
     theoretical_data_path = 'data/theoretical_series.csv'
     models_directory = 'data/model_weights/'
     
     print("Загружаем и подготавливаем данные...")
     theoretical_series, observed_series, normalization_factor = _prepare_data(
-        ssn_data_url, theoretical_data_path
+        ssn_data, theoretical_data_path
     )
     
     print("Выполняем предсказания...")
@@ -274,7 +274,7 @@ def main(
             normalization_factor=normalization_factor,
             depth=depth,
             predictions=predictions,
-            ssn_url=ssn_data_url,
+            ssn_url=ssn_data,
             path_to_save=path_to_save
         )
         print("График создан и сохранен")
@@ -283,13 +283,15 @@ def main(
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Предсказание солнечных пятен с использованием модели NARX',
+        description='Предсказание с использованием модели NARX',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
             Примеры использования:
             python predict.py                                    
             python predict.py --depth 6 --need_plot            
-            python predict.py --device cuda --path_to_save results  
+            python predict.py --device cuda --path_to_save results
+            python predict.py --ssn_data data/local_ssn.csv
+            python predict.py --ssn_data https://www.sidc.be/SILSO/DATA/SN_ms_tot_V2.0.csv
         """
     )
     
@@ -317,6 +319,12 @@ if __name__ == '__main__':
         action='store_true', 
         help='Создать график с предсказаниями'
     )
+    parser.add_argument(
+        '--ssn_data', 
+        type=str, 
+        default='https://www.sidc.be/SILSO/DATA/SN_ms_tot_V2.0.csv', 
+        help='URL для скачивания данных SSN или путь к локальному файлу (по умолчанию: URL)'
+    )
     
     args = parser.parse_args()
 
@@ -334,6 +342,7 @@ if __name__ == '__main__':
     print(f"Глубина предсказания: {args.depth}")
     print(f"Директория сохранения: {args.path_to_save}")
     print(f"Создание графика: {'Да' if args.need_plot else 'Нет'}")
+    print(f"Источник данных SSN: {args.ssn_data}")
     print("-" * 50)
 
-    main(device, args.path_to_save, args.depth, args.need_plot)
+    main(device, args.path_to_save, args.depth, args.need_plot, args.ssn_data)
