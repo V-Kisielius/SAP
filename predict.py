@@ -1,10 +1,3 @@
-"""
-Модуль для предсказания солнечных пятен с использованием модели NARX.
-
-Этот скрипт загружает данные о солнечных пятнах, подготавливает их для модели,
-выполняет предсказания на 18 месяцев вперед и сохраняет результаты.
-"""
-
 import argparse
 import pandas as pd
 import torch
@@ -19,19 +12,6 @@ import matplotlib.dates as mdates
 
 
 def _prepare_data(ssn_url: str, theoretical_path: str) -> Tuple[np.ndarray, np.ndarray, float]:
-    """
-    Подготавливает данные для модели: загружает и нормализует ряды солнечных пятен.
-    
-    Args:
-        ssn_url: URL для загрузки данных о солнечных пятнах
-        theoretical_path: Путь к файлу с теоретическими данными
-        
-    Returns:
-        Tuple содержащий:
-        - theoretical_series: нормализованный теоретический ряд
-        - observed_series: нормализованный наблюдаемый ряд  
-        - normalization_factor: коэффициент нормализации для восстановления исходных значений
-    """
     df_theoretical = pd.read_csv(theoretical_path, sep=';')
     
     df_ssn = pd.read_csv(
@@ -64,21 +44,6 @@ def predict(
     normalization_factor: float, 
     depth: int
 ) -> np.ndarray:
-    """
-    Выполняет предсказания солнечных пятен на 18 месяцев вперед используя обученные модели NARX.
-    
-    Args:
-        device: Устройство для вычислений (CPU/GPU)
-        path_to_models: Путь к директории с весами моделей
-        theoretical_series: Нормализованный теоретический ряд
-        observed_series: Нормализованный наблюдаемый ряд
-        normalization_factor: Коэффициент нормализации для восстановления исходных значений
-        depth: Глубина предсказания
-        
-    Returns:
-        Массив предсказаний формы (N, 18), где N - количество образцов,
-        18 - количество горизонтов предсказания
-    """
     prediction_horizons = range(1, 19)
     
     loaded_models = []
@@ -100,8 +65,7 @@ def predict(
         
         data = Datax18(theoretical_series, observed_series, previous_values=4, horizon=horizon)
         data_objects.append(data)
-        delta = len(observed_series) - 11
-        test_start_index = delta + 1 - (horizon - 1) + 7 - 4 + 3 - depth
+        test_start_index = len(observed_series) - horizon - depth - 3
         test_indices.append(test_start_index)
 
     horizon_predictions = []
@@ -127,15 +91,6 @@ def save_predictions(
     depth: int, 
     observed_series_length: int
 ) -> None:
-    """
-    Сохраняет предсказания в CSV файлы с соответствующими датами.
-    
-    Args:
-        predictions: Массив предсказаний формы (N, 18)
-        path_to_save: Директория для сохранения файлов
-        depth: Глубина предсказания
-        observed_series_length: Длина наблюдаемого ряда
-    """
     os.makedirs(path_to_save, exist_ok=True)
     
     df_theoretical = pd.read_csv('data/theoretical_series.csv', sep=';')
@@ -172,15 +127,6 @@ def save_predictions(
         output_df.to_csv(filepath, index=False, header=False)
 
 def _decimal_to_datetime(decimal_date: float) -> datetime.datetime:
-    """
-    Преобразует десятичную дату в объект datetime.
-    
-    Args:
-        decimal_date: Десятичная дата (например, 2024.5 для июня 2024)
-        
-    Returns:
-        Объект datetime с первым днем соответствующего месяца
-    """
     year = int(decimal_date)
     fractional_part = decimal_date - year
     month = int(fractional_part * 12) + 1
@@ -200,18 +146,6 @@ def plot_predictions(
     ssn_url: str,
     path_to_save: str
 ) -> None:
-    """
-    Создает график с наблюдаемыми данными, теоретическими значениями и предсказаниями.
-    
-    Args:
-        observed_series: Нормализованный наблюдаемый ряд солнечных пятен
-        theoretical_series: Нормализованный теоретический ряд
-        normalization_factor: Коэффициент нормализации для восстановления исходных значений
-        depth: Глубина предсказания
-        predictions: Массив предсказаний формы (N, 18)
-        ssn_url: URL для загрузки данных о солнечных пятнах
-        path_to_save: Директория для сохранения графика
-    """
     plt.figure(figsize=(15, 7))
     
     observed_length = len(observed_series)
@@ -303,15 +237,6 @@ def main(
     depth: int, 
     need_plot: bool
 ) -> None:
-    """
-    Основная функция для выполнения предсказаний солнечных пятен.
-    
-    Args:
-        device: Устройство для вычислений (CPU/GPU)
-        path_to_save: Директория для сохранения результатов
-        depth: Глубина предсказания
-        need_plot: Флаг для создания графика предсказаний
-    """
     ssn_data_url = 'https://www.sidc.be/SILSO/DATA/SN_ms_tot_V2.0.csv'
     theoretical_data_path = 'data/theoretical_series.csv'
     models_directory = 'data/model_weights/'
@@ -361,10 +286,10 @@ if __name__ == '__main__':
         description='Предсказание солнечных пятен с использованием модели NARX',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Примеры использования:
-  python predict.py                                    
-  python predict.py --depth 6 --need_plot            
-  python predict.py --device cuda --path_to_save results  
+            Примеры использования:
+            python predict.py                                    
+            python predict.py --depth 6 --need_plot            
+            python predict.py --device cuda --path_to_save results  
         """
     )
     
